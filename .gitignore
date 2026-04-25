@@ -1,0 +1,14 @@
+# macOS системные файлы
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# virtual environment
+ve/
+
+# IDE / editors
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
