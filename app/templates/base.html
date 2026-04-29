@@ -40,8 +40,25 @@
                     <a class="nav-link" href="{{ url_for('phone') }}">Телефон</a>
                   </li>
                   <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('visits') }}">Счётчик</a>
+                  </li>
+                  {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('secret') }}">Секретная страница</a>
+                    </li>
+                  {% endif %}
+                  <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('about') }}">Об авторе</a>
                   </li>
+                  {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('logout') }}">Выйти</a>
+                    </li>
+                  {% else %}
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('login') }}">Войти</a>
+                    </li>
+                  {% endif %}
                 </ul>
               </div>
             </div>
@@ -50,6 +67,17 @@
 
     <main class="my-3">
         <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
             {% block content %}
                 <h1>Содержимое по умолчанию</h1>
             {% endblock %}
