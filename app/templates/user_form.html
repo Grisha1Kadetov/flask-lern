@@ -1,0 +1,91 @@
+{% macro password_requirements() %}
+  <div class="form-text">
+    Пароль должен быть от 8 до 128 символов, содержать заглавную и строчную букву, цифру, не содержать пробелов.
+    Разрешены латинские и кириллические буквы, арабские цифры и символы: ~ ! ? @ # $ % ^ & * _ - + ( ) [ ] { } &gt; &lt; / \ | " ' . , : ;
+  </div>
+{% endmacro %}
+
+{% macro render_user_form(form_data, errors, roles, include_login_password=True) %}
+  {% if include_login_password %}
+    <div class="mb-3">
+      <label class="form-label" for="login">Логин</label>
+      <input
+        class="form-control {% if errors.get('login') %}is-invalid{% endif %}"
+        id="login"
+        name="login"
+        type="text"
+        value="{{ form_data.get('login', '') }}"
+      >
+      {% if errors.get('login') %}
+        <div class="invalid-feedback">{{ errors.get('login') }}</div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" for="password">Пароль</label>
+      <input
+        class="form-control {% if errors.get('password') %}is-invalid{% endif %}"
+        id="password"
+        name="password"
+        type="password"
+      >
+      {% if errors.get('password') %}
+        <div class="invalid-feedback">{{ errors.get('password') }}</div>
+      {% endif %}
+      {{ password_requirements() }}
+    </div>
+  {% endif %}
+
+  <div class="mb-3">
+    <label class="form-label" for="last_name">Фамилия</label>
+    <input
+      class="form-control {% if errors.get('last_name') %}is-invalid{% endif %}"
+      id="last_name"
+      name="last_name"
+      type="text"
+      value="{{ form_data.get('last_name', '') }}"
+    >
+    {% if errors.get('last_name') %}
+      <div class="invalid-feedback">{{ errors.get('last_name') }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="first_name">Имя</label>
+    <input
+      class="form-control {% if errors.get('first_name') %}is-invalid{% endif %}"
+      id="first_name"
+      name="first_name"
+      type="text"
+      value="{{ form_data.get('first_name', '') }}"
+    >
+    {% if errors.get('first_name') %}
+      <div class="invalid-feedback">{{ errors.get('first_name') }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="middle_name">Отчество</label>
+    <input
+      class="form-control"
+      id="middle_name"
+      name="middle_name"
+      type="text"
+      value="{{ form_data.get('middle_name', '') }}"
+    >
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="role_id">Роль</label>
+    <select class="form-select" id="role_id" name="role_id">
+      <option value="">Без роли</option>
+      {% for role in roles %}
+        <option value="{{ role.id }}" {% if form_data.get('role_id') == role.id|string %}selected{% endif %} >
+          {{ role.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn btn-primary" type="submit">Сохранить</button>
+{% endmacro %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% from 'user_form.html' import render_user_form %}
+
+{% block content %}
+  <h1 class="my-4">Создание пользователя</h1>
+
+  <form method="post" class="border rounded p-3" style="max-width: 720px;" novalidate>
+    {{ render_user_form(form_data, errors, roles, include_login_password=True) }}
+  </form>
+{% endblock %}
