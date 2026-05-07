@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1 class="my-4">Отчёт по страницам</h1>
+
+  <table class="table table-bordered table-striped align-middle">
+    <thead>
+      <tr>
+        <th>№</th>
+        <th>Страница</th>
+        <th>Количество посещений</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for path, visits_count in rows %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ path }}</td>
+          <td>{{ visits_count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a class="btn btn-primary" href="{{ url_for('reports.pages_report_csv') }}">Экспорт в CSV</a>
+{% endblock %}

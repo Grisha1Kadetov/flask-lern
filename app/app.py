@@ -2,6 +2,7 @@ import os
 import random
 import re
 from datetime import datetime
+from functools import wraps
 
 from faker import Faker
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
@@ -56,6 +57,17 @@ class User(UserMixin, Base):
         return ' '.join(part for part in [self.last_name, self.first_name, self.middle_name] if part)
 
 
+class VisitLog(Base):
+    __tablename__ = 'visit_logs'
+
+    id = Column(Integer, primary_key=True)
+    path = Column(String(100), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+
+    user = relationship('User')
+
+
 @login_manager.user_loader
 def load_user(user_id):
     db = SessionLocal()
@@ -70,6 +82,17 @@ def shutdown_session(exception=None):
 @app.before_first_request
 def prepare_database():
     init_db()
+
+
+@app.before_request
+def log_visit():
+    if request.endpoint == 'static':
+        return
+
+    db = SessionLocal()
+    user_id = current_user.id if current_user.is_authenticated else None
+    db.add(VisitLog(path=request.path[:100], user_id=user_id))
+    db.commit()
 
 
 def init_db():
@@ -93,30 +116,89 @@ def init_db():
             )
             db.add(user_role)
 
-        if db.query(User).filter_by(login='admin').first() is None:
-            db.add(User(
-                login='admin',
-                password_hash=generate_password_hash('qwerty'),
-                last_name='Иванов',
-                first_name='Иван',
-                middle_name='Иванович',
-                role=admin_role
-            ))
+        seed_users = [
+            ('admin', 'Иванов', 'Иван', 'Иванович', admin_role),
+            ('user', 'Петров', 'Пётр', 'Петрович', user_role),
+        ]
 
-        if db.query(User).filter_by(login='user').first() is None:
-            db.add(User(
-                login='user',
-                password_hash=generate_password_hash('qwerty'),
-                last_name='Петров',
-                first_name='Пётр',
-                middle_name='Петрович',
-                role=user_role
-            ))
+        for login, last_name, first_name, middle_name, role in seed_users:
+            user = db.query(User).filter_by(login=login).first()
+            if user is None:
+                user = User(
+                    login=login,
+                    password_hash=generate_password_hash('qwerty'),
+                    last_name=last_name,
+                    first_name=first_name,
+                    middle_name=middle_name,
+                    role=role
+                )
+                db.add(user)
+            elif user.role is None:
+                user.role = role
 
         db.commit()
     except SQLAlchemyError:
         db.rollback()
         raise
+
+
+def role_name(user):
+    return user.role.name if user.is_authenticated and user.role else None
+
+
+def is_admin():
+    return role_name(current_user) == 'Администратор'
+
+
+def is_regular_user():
+    return role_name(current_user) == 'Пользователь'
+
+
+def can(action, target_user_id=None):
+    if not current_user.is_authenticated:
+        return False
+
+    if is_admin():
+        return action in {
+            'create_user',
+            'edit_user',
+            'view_user',
+            'delete_user',
+            'view_visit_logs',
+            'view_visit_reports',
+            'edit_user_role'
+        }
+
+    if is_regular_user():
+        own_profile = target_user_id is not None and int(target_user_id) == current_user.id
+        if action in {'edit_user', 'view_user'}:
+            return own_profile
+        if action == 'view_visit_logs':
+            return True
+
+    return False
+
+
+def check_rights(action):
+    def decorator(view_function):
+        @wraps(view_function)
+        def wrapper(*args, **kwargs):
+            target_user_id = kwargs.get('user_id')
+            if not can(action, target_user_id):
+                flash('У вас недостаточно прав для доступа к данной странице.', 'danger')
+                return redirect(url_for('index'))
+            return view_function(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@app.context_processor
+def inject_rights_helpers():
+    return {
+        'can': can,
+        'is_admin': is_admin,
+        'is_regular_user': is_regular_user
+    }
 
 
 images_ids = ['7d4e9175-95ea-4c5f-8be5-92a6b708bb3c',
@@ -243,7 +325,7 @@ def get_user_or_404(user_id):
     return user
 
 
-def fill_user_from_form(user, form_data, include_login_password=True):
+def fill_user_from_form(user, form_data, include_login_password=True, allow_role=True):
     if include_login_password:
         user.login = form_data.get('login', '').strip()
         user.password_hash = generate_password_hash(form_data.get('password', ''))
@@ -251,8 +333,10 @@ def fill_user_from_form(user, form_data, include_login_password=True):
     user.last_name = form_data.get('last_name', '').strip()
     user.first_name = form_data.get('first_name', '').strip()
     user.middle_name = form_data.get('middle_name', '').strip() or None
-    role_id = form_data.get('role_id')
-    user.role_id = int(role_id) if role_id else None
+
+    if allow_role:
+        role_id = form_data.get('role_id')
+        user.role_id = int(role_id) if role_id else None
 
 
 @app.route('/')
@@ -263,13 +347,14 @@ def index():
 
 
 @app.route('/users/<int:user_id>')
+@check_rights('view_user')
 def user_view(user_id):
     user = get_user_or_404(user_id)
     return render_template('user_view.html', title='Просмотр пользователя', user=user)
 
 
 @app.route('/users/create', methods=['GET', 'POST'])
-@login_required
+@check_rights('create_user')
 def user_create():
     form_data = request.form.to_dict() if request.method == 'POST' else {}
     errors = {}
@@ -307,9 +392,10 @@ def user_create():
 
 
 @app.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
-@login_required
+@check_rights('edit_user')
 def user_edit(user_id):
     user = get_user_or_404(user_id)
+    allow_role = can('edit_user_role', user.id)
     form_data = {
         'last_name': user.last_name or '',
         'first_name': user.first_name or '',
@@ -325,7 +411,7 @@ def user_edit(user_id):
         if not errors:
             db = SessionLocal()
             user = db.query(User).get(user_id)
-            fill_user_from_form(user, form_data, include_login_password=False)
+            fill_user_from_form(user, form_data, include_login_password=False, allow_role=allow_role)
 
             try:
                 db.commit()
@@ -343,12 +429,13 @@ def user_edit(user_id):
         user=user,
         form_data=form_data,
         errors=errors,
-        roles=get_roles()
+        roles=get_roles(),
+        role_disabled=not allow_role
     )
 
 
 @app.route('/users/<int:user_id>/delete', methods=['POST'])
-@login_required
+@check_rights('delete_user')
 def user_delete(user_id):
     db = SessionLocal()
     user = db.query(User).get(user_id)
@@ -500,3 +587,8 @@ def change_password():
 @app.route('/about')
 def about():
     return render_template('about.html', title='Об авторе')
+
+
+from reports import reports_bp
+
+app.register_blueprint(reports_bp)

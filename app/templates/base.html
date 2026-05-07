@@ -26,7 +26,7 @@
                 <span class="navbar-toggler-icon"></span>
               </button>
               <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center flex-lg-nowrap">
                   <li class="nav-item">
                     <a class="nav-link" aria-current="page" href="{{ url_for('index') }}">Пользователи</a>
                   </li>
@@ -42,12 +42,17 @@
                   <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('visits') }}">Счётчик</a>
                   </li>
+                  {% if can('view_visit_logs') %}
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('reports.visit_logs') }}">Журнал</a>
+                    </li>
+                  {% endif %}
                   {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                      <a class="nav-link" href="{{ url_for('secret') }}">Секретная страница</a>
+                      <a class="nav-link" href="{{ url_for('secret') }}">Секретная</a>
                     </li>
                     <li class="nav-item">
-                      <a class="nav-link" href="{{ url_for('change_password') }}">Изменить пароль</a>
+                      <a class="nav-link" href="{{ url_for('change_password') }}">Пароль</a>
                     </li>
                   {% endif %}
                   <li class="nav-item">

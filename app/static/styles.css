@@ -2,6 +2,25 @@ body {
     font-size: 1.25rem;
 }
 
+.navbar .container {
+    max-width: 100%;
+}
+
+.navbar .nav-link,
+.navbar .navbar-brand {
+    white-space: nowrap;
+}
+
+.navbar .nav-link {
+    font-size: 1rem;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+}
+
+.navbar-collapse {
+    overflow-x: auto;
+}
+
 .avatar {
     max-width: 100%;
 }

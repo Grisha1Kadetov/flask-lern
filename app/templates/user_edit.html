@@ -7,6 +7,6 @@
   <p class="text-muted">Логин пользователя: {{ user.login }}</p>
 
   <form method="post" class="border rounded p-3" style="max-width: 720px;" novalidate>
-    {{ render_user_form(form_data, errors, roles, include_login_password=False) }}
+    {{ render_user_form(form_data, errors, roles, include_login_password=False, role_disabled=role_disabled) }}
   </form>
 {% endblock %}

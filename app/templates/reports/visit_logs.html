@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center my-4">
+    <h1 class="mb-0">Журнал посещений</h1>
+  </div>
+
+  {% if can_view_reports %}
+    <div class="mb-3">
+      <a class="btn btn-outline-primary" href="{{ url_for('reports.pages_report') }}">Отчёт по страницам</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('reports.users_report') }}">Отчёт по пользователям</a>
+    </div>
+  {% endif %}
+
+  <table class="table table-bordered table-striped align-middle">
+    <thead>
+      <tr>
+        <th>№</th>
+        <th>Пользователь</th>
+        <th>Страница</th>
+        <th>Дата</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+        <tr>
+          <td>{{ (page - 1) * per_page + loop.index }}</td>
+          <td>{{ log.user.full_name if log.user else 'Неаутентифицированный пользователь' }}</td>
+          <td>{{ log.path }}</td>
+          <td>{{ log.created_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <nav aria-label="Пагинация журнала посещений">
+    <ul class="pagination">
+      <li class="page-item {% if page == 1 %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('reports.visit_logs', page=page - 1) }}">Назад</a>
+      </li>
+
+      {% for page_number in range(1, total_pages + 1) %}
+        <li class="page-item {% if page_number == page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('reports.visit_logs', page=page_number) }}">{{ page_number }}</a>
+        </li>
+      {% endfor %}
+
+      <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('reports.visit_logs', page=page + 1) }}">Вперёд</a>
+      </li>
+    </ul>
+  </nav>
+{% endblock %}
