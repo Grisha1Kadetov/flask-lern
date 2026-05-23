@@ -1,0 +1,42 @@
+{% macro render_review(review) %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <h5 class="mb-0">{{ review.user.full_name }}</h5>
+                <span class="text-muted ms-auto">{{ review.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+            </div>
+            <p class="mb-2 rating"><span>★</span> {{ review.rating }} / 5</p>
+            <p class="mb-0">{{ review.text }}</p>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro render_review_form(course, user_review, review_ratings) %}
+    {% if current_user.is_authenticated %}
+        {% if user_review %}
+            <h4 class="mb-3">Ваш отзыв</h4>
+            {{ render_review(user_review) }}
+        {% else %}
+            <h4 class="mb-3">Оставить отзыв</h4>
+            <form method="POST" action="{{ url_for('courses.create_review', course_id=course.id) }}">
+                <div class="mb-3">
+                    <label for="rating" class="form-label">Оценка</label>
+                    <select class="form-select" name="rating" id="rating">
+                        {% for value, title in review_ratings.items() %}
+                            <option value="{{ value }}" {% if value == 5 %}selected{% endif %}>{{ title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="review-text" class="form-label">Текст отзыва</label>
+                    <textarea class="form-control" name="text" id="review-text" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-dark">Сохранить отзыв</button>
+            </form>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info mb-0">
+            Чтобы оставить отзыв, войдите в систему.
+        </div>
+    {% endif %}
+{% endmacro %}

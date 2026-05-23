@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: lab6_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lab6_db
+      POSTGRES_USER: lab6_user
+      POSTGRES_PASSWORD: lab6_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
